@@ -56,7 +56,7 @@ def generate_tokens_from_api(prompt, voice=DEFAULT_VOICE, temperature=TEMPERATUR
     
     # Create the request payload for the LM Studio API
     payload = {
-        "model": "orpheus-3b-0.1-ft-q4_k_m",  # Model name can be anything, LM Studio ignores it
+        "model": "orpheus-3b-0.1-ft",
         "prompt": formatted_prompt,
         "max_tokens": max_tokens,
         "temperature": temperature,
@@ -296,4 +296,4 @@ def main():
     print(f"Audio saved to {output_file}")
 
 if __name__ == "__main__":
-    main() 
+    main()

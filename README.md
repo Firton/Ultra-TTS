@@ -1,71 +1,75 @@
-# Orpheus-TTS-Local
+# Ultra-TTS
 
-A lightweight client for running [Orpheus TTS](https://huggingface.co/canopylabs/orpheus-3b-0.1-ft) locally using LM Studio API.
+Ultra-TTS is a local browser app and CLI workspace for experimenting with text-to-speech backends on Windows.
 
-## Features
+The current app supports:
 
-- 🎧 High-quality Text-to-Speech using the Orpheus TTS model
-- 💻 Completely local - no cloud API keys needed
-- 🔊 Multiple voice options (tara, leah, jess, leo, dan, mia, zac, zoe)
-- 💾 Save audio to WAV files
+- Orpheus through LM Studio's local OpenAI-compatible API
+- Chatterbox Multilingual for local multilingual generation
+- Kokoro through a separate lightweight local worker
+- Dia as an experimental English dialogue backend
+- Single-text and multi-speaker script generation
 
-## Quick Setup
+Generated audio, model files, logs, virtual environments, and local cache files are intentionally ignored by Git.
 
-1. Install [LM Studio](https://lmstudio.ai/) 
-2. Download the [Orpheus TTS model (orpheus-3b-0.1-ft-q4_k_m.gguf)](https://huggingface.co/isaiahbjork/orpheus-3b-0.1-ft-Q4_K_M-GGUF) in LM Studio
-3. Load the Orpheus model in LM Studio
-4. Start the local server in LM Studio (default: http://127.0.0.1:1234)
-5. Install dependencies:
-   ```
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
-6. Run the script:
-   ```
-   python gguf_orpheus.py --text "Hello, this is a test" --voice tara
-   ```
+## Web App
 
-## Usage
+Start the browser UI:
 
-```
-python gguf_orpheus.py --text "Your text here" --voice tara --output "output.wav"
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\launch-web.ps1
 ```
 
-### Options
+Then open:
 
-- `--text`: The text to convert to speech
-- `--voice`: The voice to use (default: tara)
-- `--output`: Output WAV file path (default: auto-generated filename)
-- `--list-voices`: Show available voices
-- `--temperature`: Temperature for generation (default: 0.6)
-- `--top_p`: Top-p sampling parameter (default: 0.9)
-- `--repetition_penalty`: Repetition penalty (default: 1.1)
-
-## Available Voices
-
-- tara - Best overall voice for general use (default)
-- leah
-- jess
-- leo
-- dan
-- mia
-- zac
-- zoe
-
-## Emotion
-You can add emotion to the speech by adding the following tags:
-```xml
-<giggle>
-<laugh>
-<chuckle>
-<sigh>
-<cough>
-<sniffle>
-<groan>
-<yawn>
-<gasp>
+```text
+http://127.0.0.1:8765
 ```
+
+On this machine, the desktop launcher is:
+
+```text
+C:\Users\firto\Desktop\Ultra-TTS Web.bat
+```
+
+## Orpheus / LM Studio
+
+1. Install [LM Studio](https://lmstudio.ai/).
+2. Download an Orpheus GGUF model, for example `orpheus-3b-0.1-ft-q4_k_m.gguf`.
+3. Load the model in LM Studio.
+4. Start the local server in LM Studio at `http://127.0.0.1:1234`.
+5. Use the Orpheus backend in the Ultra-TTS web UI.
+
+CLI example:
+
+```powershell
+python .\gguf_orpheus.py --text "Hello, this is a test" --voice tara
+```
+
+## Backends
+
+Orpheus voices:
+
+```text
+tara, leah, jess, leo, dan, mia, zac, zoe
+```
+
+Chatterbox is the default practical option for Japanese and multilingual local TTS in the web UI.
+
+Kokoro is a lightweight English backend and runs through `.venv-kokoro`.
+
+Dia is dialogue-focused and expects English speaker-tagged dialogue. It needs more VRAM than the current 6GB-class local GPU for practical quality, so the UI treats it as experimental.
+
+## Local Files
+
+Ignored by Git:
+
+- `.venv/`
+- `.venv-kokoro/`
+- `logs/`
+- `outputs/`
+- audio outputs such as `*.wav`, `*.mp3`, `*.flac`
+- downloaded model files such as `*.gguf`, `*.safetensors`, `*.ckpt`, `*.pt`, `*.onnx`
 
 ## License
 

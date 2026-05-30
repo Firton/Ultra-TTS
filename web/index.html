@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ultra-TTS</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>Ultra-TTS</h1>
+          <p id="statusText">状態を確認中</p>
+        </div>
+        <button id="ensureButton" class="secondary-button" type="button">準備を確認</button>
+      </header>
+
+      <main class="workspace">
+        <section class="panel controls-panel">
+          <div class="field-row model-row">
+            <label>モデル</label>
+            <div id="backendButtons" class="backend-buttons"></div>
+          </div>
+
+          <section id="chatterboxOptions" class="backend-options hidden">
+            <div class="option-grid">
+              <label class="option-label">
+                <span class="option-title">言語</span>
+                <select id="languageId"></select>
+                <span class="help-text">読み上げる文章の言語。日本語なら Japanese (ja) のままでOK。</span>
+              </label>
+              <label class="option-label">
+                <span class="option-title">T3</span>
+                <select id="t3Model">
+                  <option value="v2">v2</option>
+                  <option value="v3">v3</option>
+                </select>
+                <span class="help-text">モデル版の選択。表示されている場合だけ変更可能。通常は既定値でOK。</span>
+              </label>
+              <label class="option-label">
+                <span class="option-title">抑揚</span>
+                <input id="exaggeration" type="number" min="0.25" max="2" step="0.05" value="0.5">
+                <span class="help-text">感情や強弱の大きさ。上げるほど表情は出るが、不安定になりやすい。</span>
+              </label>
+              <label class="option-label">
+                <span class="option-title">CFG</span>
+                <input id="cfgWeight" type="number" min="0" max="1" step="0.05" value="0.5">
+                <span class="help-text">文章や参照音声への寄せ具合。迷ったら0.5、硬い時は少し下げる。</span>
+              </label>
+              <label class="option-label">
+                <span class="option-title">温度</span>
+                <input id="temperature" type="number" min="0.05" max="5" step="0.05" value="0.65">
+                <span class="help-text">声の揺らぎ。低いほど安定。末尾反復が出る時は0.5〜0.65へ下げる。</span>
+              </label>
+              <label class="option-label">
+                <span class="option-title">反復抑制</span>
+                <input id="repetitionPenalty" type="number" min="1" max="5" step="0.05" value="2.4">
+                <span class="help-text">同じ単語を繰り返しにくくする強さ。末尾が二重になる時は2.6〜3.0へ上げる。</span>
+              </label>
+              <label class="option-label">
+                <span class="option-title">Top-p</span>
+                <input id="topP" type="number" min="0.05" max="1" step="0.05" value="0.85">
+                <span class="help-text">候補の広さ。低いほど安定しやすい。単調すぎる時だけ少し上げる。</span>
+              </label>
+              <label class="option-label">
+                <span class="option-title">Min-p</span>
+                <input id="minP" type="number" min="0" max="1" step="0.01" value="0.05">
+                <span class="help-text">弱すぎる候補を切る設定。通常は0.05のままでOK。</span>
+              </label>
+              <label class="option-label">
+                <span class="option-title">Seed</span>
+                <input id="seed" type="number" min="0" step="1" value="0">
+                <span class="help-text">同じ結果を出しやすくする番号。0は固定しない。再現したい時だけ指定。</span>
+              </label>
+            </div>
+            <label class="stacked-label" for="audioPromptPath">参照音声パス</label>
+            <input id="audioPromptPath" type="text" placeholder="任意: C:\path\voice.wav">
+            <p class="help-text">空欄ならChatterbox標準の声。WAVなどの音声ファイルを指定すると、その声質や話し方に寄せます。</p>
+          </section>
+
+          <section id="kokoroOptions" class="backend-options hidden">
+            <div class="option-grid compact-grid">
+              <label class="option-label">
+                <span class="option-title">速度</span>
+                <input id="kokoroSpeed" type="number" min="0.5" max="2" step="0.05" value="1">
+                <span class="help-text">話速。1.0が標準、0.9で少しゆっくり、1.1で少し速め。</span>
+              </label>
+            </div>
+            <p class="help-text">Kokoroは英語向けの軽量モデルです。このPCではPython 3.11の分離環境でCPU実行します。日本語はChatterboxを使う構成にしています。</p>
+          </section>
+
+          <section id="diaOptions" class="backend-options hidden">
+            <div class="option-grid">
+              <label class="option-label">
+                <span class="option-title">最大トークン</span>
+                <input id="diaMaxNewTokens" type="number" min="128" max="4096" step="128" value="1280">
+                <span class="help-text">生成する音声の長さ上限。256は短い一言用。4行前後の会話は1280以上が目安。</span>
+              </label>
+              <label class="option-label">
+                <span class="option-title">Guidance</span>
+                <input id="diaGuidanceScale" type="number" min="1" max="8" step="0.1" value="3">
+                <span class="help-text">台本への寄せ具合。通常は3.0。高すぎると硬くなりやすい。</span>
+              </label>
+              <label class="option-label">
+                <span class="option-title">温度</span>
+                <input id="diaTemperature" type="number" min="0.1" max="3" step="0.1" value="1.8">
+                <span class="help-text">声や間の揺らぎ。低いほど安定、高いほど変化が出る。</span>
+              </label>
+              <label class="option-label">
+                <span class="option-title">Top-p</span>
+                <input id="diaTopP" type="number" min="0.05" max="1" step="0.05" value="0.9">
+                <span class="help-text">候補の広さ。通常は0.9。崩れる時は少し下げる。</span>
+              </label>
+              <label class="option-label">
+                <span class="option-title">Top-k</span>
+                <input id="diaTopK" type="number" min="0" max="200" step="1" value="50">
+                <span class="help-text">候補数の上限。0で無効。通常は50。</span>
+              </label>
+              <label class="option-label">
+                <span class="option-title">Seed</span>
+                <input id="diaSeed" type="number" min="0" step="1" value="0">
+                <span class="help-text">声や会話の再現用。0は固定しない。</span>
+              </label>
+              <label class="option-label checkbox-label">
+                <span class="option-title">低VRAMでも試す</span>
+                <input id="diaAllowLowVram" type="checkbox">
+                <span class="help-text">このPCのGPUではDiaが破綻しやすいので通常はオフ。実験したい時だけオン。</span>
+              </label>
+            </div>
+            <p class="help-text">Diaは英語会話向けの実験枠です。台本は[S1]と[S2]を交互に書く形式にしてください。公式目安は約10GB VRAMで、このPCの6GB級GPUでは遅いだけでなく音声が崩れることがあります。</p>
+          </section>
+
+          <div class="tabs" role="tablist" aria-label="生成モード">
+            <button class="tab active" data-mode="single" type="button">単発</button>
+            <button class="tab" data-mode="script" type="button">台本</button>
+          </div>
+
+          <section id="singleMode" class="mode-panel">
+            <div class="field-row">
+              <label>声</label>
+              <div id="singleVoiceButtons" class="voice-grid"></div>
+            </div>
+            <label class="stacked-label" for="singleText">テキスト</label>
+            <textarea id="singleText" rows="8" spellcheck="false">Hello, this is a local Ultra-TTS test.</textarea>
+            <button id="generateSingleButton" class="primary-button" type="button">生成</button>
+          </section>
+
+          <section id="scriptMode" class="mode-panel hidden">
+            <div class="speaker-map" id="speakerMap"></div>
+            <div class="line-builder">
+              <div class="speaker-buttons" id="speakerButtons"></div>
+              <input id="lineText" type="text" placeholder="追加するセリフ">
+              <button id="addLineButton" class="secondary-button" type="button">追加</button>
+            </div>
+            <label class="stacked-label" for="scriptText">台本</label>
+            <textarea id="scriptText" rows="12" spellcheck="false">A: Hello, how are you?
+B: I'm good. Let's generate this as a two-speaker WAV.</textarea>
+            <div class="inline-options">
+              <label for="silenceMs">間隔(ms)</label>
+              <input id="silenceMs" type="number" min="0" max="5000" step="50" value="250">
+            </div>
+            <button id="generateScriptButton" class="primary-button" type="button">台本を生成</button>
+          </section>
+        </section>
+
+        <section class="panel result-panel">
+          <div class="result-head">
+            <div>
+              <h2>出力</h2>
+              <p id="resultMeta">まだ生成していません</p>
+            </div>
+            <div id="outputState" class="output-state output-ready" aria-live="polite">
+              <span class="state-dot"></span>
+              <span id="outputStateLabel">出力可能</span>
+              <span id="outputElapsed" class="output-elapsed"></span>
+            </div>
+          </div>
+          <audio id="audioPlayer" controls></audio>
+          <a id="downloadLink" class="download-link hidden" href="#" download>WAVを開く</a>
+          <div id="log" class="log" aria-live="polite"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

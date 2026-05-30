@@ -1,0 +1,5 @@
+kokoro>=0.9.4
+soundfile>=0.13.1
+
+# Kokoro is installed into .venv-kokoro with Python 3.11 on this machine.
+# The main app venv uses Python 3.13, which Kokoro does not currently support.
