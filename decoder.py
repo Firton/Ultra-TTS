@@ -1,3 +1,7 @@
+import local_paths
+
+local_paths.configure_local_model_env()
+
 from snac import SNAC
 import numpy as np
 import torch
@@ -6,7 +10,10 @@ import threading
 import queue
 
 
-model = SNAC.from_pretrained("hubertsiuzdak/snac_24khz").eval()
+SNAC_REPO = "hubertsiuzdak/snac_24khz"
+LOCAL_SNAC_DIR = local_paths.MODELS_DIR / "huggingface" / SNAC_REPO.replace("/", "__")
+SNAC_MODEL_ID = str(LOCAL_SNAC_DIR) if (LOCAL_SNAC_DIR / "config.json").exists() else SNAC_REPO
+model = SNAC.from_pretrained(SNAC_MODEL_ID).eval()
 
 # Check if CUDA is available and set device accordingly
 snac_device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"

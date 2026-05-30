@@ -5,7 +5,10 @@ import threading
 from inspect import signature
 from pathlib import Path
 
-import numpy as np
+import local_paths
+
+
+local_paths.configure_local_model_env()
 
 
 SUPPORTED_LANGUAGES = {
@@ -35,6 +38,8 @@ SUPPORTED_LANGUAGES = {
 }
 
 DEFAULT_LANGUAGE = "ja"
+DEFAULT_REPO_ID = os.getenv("CHATTERBOX_REPO_ID", "ResembleAI/chatterbox")
+LOCAL_REPO_DIR = local_paths.MODELS_DIR / "huggingface" / DEFAULT_REPO_ID.replace("/", "__")
 DEFAULT_T3_MODEL = os.getenv("CHATTERBOX_MULTILINGUAL_T3_MODEL", "v2")
 MAX_TEXT_CHARS = 300
 DEFAULT_TEMPERATURE = 0.65
@@ -48,10 +53,31 @@ _model_device = None
 _model_lock = threading.Lock()
 
 
+class _NoopWatermarker:
+    def apply_watermark(self, wav, *args, **kwargs):
+        return wav
+
+    def get_watermark(self, watermarked_wav, sample_rate=44100, watermark_length=None, **kwargs):
+        import numpy as np
+
+        return np.zeros(watermark_length or 32, dtype=np.float32)
+
+
+def patch_chatterbox_watermarker():
+    try:
+        import perth
+    except Exception:
+        return
+
+    if getattr(perth, "PerthImplicitWatermarker", None) is None:
+        perth.PerthImplicitWatermarker = _NoopWatermarker
+
+
 def dependency_status():
     try:
         import torch
         from chatterbox.mtl_tts import ChatterboxMultilingualTTS
+        patch_chatterbox_watermarker()
     except Exception as exc:
         return {
             "installed": False,
@@ -105,6 +131,20 @@ def supports_t3(model_class):
     return "t3_model" in signature(model_class.from_pretrained).parameters
 
 
+def from_pretrained_kwargs(model_class, device, t3_model):
+    parameters = signature(model_class.from_pretrained).parameters
+    kwargs = {"device": device}
+    repo_id = str(LOCAL_REPO_DIR) if (LOCAL_REPO_DIR / "README.md").exists() else DEFAULT_REPO_ID
+
+    if "repo_id" in parameters:
+        kwargs["repo_id"] = repo_id
+    if "local_dir" in parameters and LOCAL_REPO_DIR.exists():
+        kwargs["local_dir"] = str(LOCAL_REPO_DIR)
+    if "t3_model" in parameters:
+        kwargs["t3_model"] = t3_model
+    return kwargs
+
+
 def safe_float(value, default, min_value, max_value):
     try:
         number = float(value)
@@ -138,6 +178,8 @@ def set_seed(torch_module, seed, device):
     if seed <= 0:
         return
 
+    import numpy as np
+
     random.seed(seed)
     np.random.seed(seed)
     torch_module.manual_seed(seed)
@@ -153,16 +195,19 @@ def get_or_load_model(t3_model=None):
     with _model_lock:
         import torch
         from chatterbox.mtl_tts import ChatterboxMultilingualTTS
+        patch_chatterbox_watermarker()
 
         device = choose_device(torch)
         model_key = t3_model if supports_t3(ChatterboxMultilingualTTS) else "default"
         if _model is not None and _model_key == model_key:
             return _model, _model_device
 
-        if supports_t3(ChatterboxMultilingualTTS):
-            _model = ChatterboxMultilingualTTS.from_pretrained(device=device, t3_model=t3_model)
+        if LOCAL_REPO_DIR.exists() and hasattr(ChatterboxMultilingualTTS, "from_local"):
+            _model = ChatterboxMultilingualTTS.from_local(LOCAL_REPO_DIR, device)
         else:
-            _model = ChatterboxMultilingualTTS.from_pretrained(device=device)
+            _model = ChatterboxMultilingualTTS.from_pretrained(
+                **from_pretrained_kwargs(ChatterboxMultilingualTTS, device, t3_model)
+            )
         _model_key = model_key
         _model_device = device
         return _model, device
@@ -238,6 +283,8 @@ def generate_waveform(text, options=None):
 
 
 def waveform_to_pcm16(wav):
+    import numpy as np
+
     if hasattr(wav, "detach"):
         wav = wav.detach().cpu().numpy()
 

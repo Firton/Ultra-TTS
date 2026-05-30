@@ -1,15 +1,17 @@
 import os
 import sys
-import requests
 import json
 import time
 import wave
-import numpy as np
-import sounddevice as sd
 import argparse
 import threading
 import queue
 import asyncio
+
+import local_paths
+
+
+local_paths.configure_local_model_env()
 
 # LM Studio API settings
 API_URL = "http://127.0.0.1:1234/v1/completions"
@@ -51,6 +53,8 @@ def format_prompt(prompt, voice=DEFAULT_VOICE):
 def generate_tokens_from_api(prompt, voice=DEFAULT_VOICE, temperature=TEMPERATURE, 
                             top_p=TOP_P, max_tokens=MAX_TOKENS, repetition_penalty=REPETITION_PENALTY):
     """Generate tokens from text using LM Studio API."""
+    import requests
+
     formatted_prompt = format_prompt(prompt, voice)
     print(f"Generating speech for: {formatted_prompt}")
     
@@ -203,6 +207,9 @@ def tokens_decoder_sync(syn_token_gen, output_file=None):
 
 def stream_audio(audio_buffer):
     """Stream audio buffer to output device."""
+    import numpy as np
+    import sounddevice as sd
+
     if audio_buffer is None or len(audio_buffer) == 0:
         return
     

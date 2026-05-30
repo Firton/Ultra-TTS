@@ -4,14 +4,18 @@ import subprocess
 import sys
 from pathlib import Path
 
+import local_paths
+
+
+local_paths.configure_local_model_env()
 
 ROOT = Path(__file__).resolve().parent
-KOKORO_PYTHON = ROOT / ".venv-kokoro" / "Scripts" / "python.exe"
-KOKORO_PACKAGE = ROOT / ".venv-kokoro" / "Lib" / "site-packages" / "kokoro"
+KOKORO_PYTHON = ROOT / ".venv-kokoro" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 WORKER = ROOT / "kokoro_worker.py"
 DEFAULT_VOICE = "af_heart"
 DEFAULT_SPEED = 1.0
 MAX_TEXT_CHARS = 1200
+_dependency_cache = None
 
 AVAILABLE_VOICES = [
     "af_heart",
@@ -59,18 +63,58 @@ def hidden_subprocess_kwargs():
 
 
 def dependency_status():
-    installed = KOKORO_PYTHON.exists() and KOKORO_PACKAGE.exists() and WORKER.exists()
+    installed, error = kokoro_dependency_check()
     return {
         "installed": installed,
         "loaded": False,
         "device": "cpu",
-        "error": None if installed else "Kokoro Python 3.11 environment is not installed.",
+        "error": error,
         "voices": AVAILABLE_VOICES,
         "defaultVoice": DEFAULT_VOICE,
         "defaultSpeed": DEFAULT_SPEED,
         "languages": {"a": "American English", "b": "British English"},
         "defaultLanguage": "a",
     }
+
+
+def kokoro_dependency_check():
+    global _dependency_cache
+
+    if _dependency_cache is not None:
+        return _dependency_cache
+
+    if not KOKORO_PYTHON.exists():
+        _dependency_cache = (
+            False,
+            f"Kokoro Python environment was not found at {KOKORO_PYTHON}.",
+        )
+        return _dependency_cache
+
+    if not WORKER.exists():
+        _dependency_cache = (False, f"Kokoro worker was not found at {WORKER}.")
+        return _dependency_cache
+
+    try:
+        result = subprocess.run(
+            [str(KOKORO_PYTHON), "-c", "import kokoro, soundfile"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+            timeout=10,
+            **hidden_subprocess_kwargs(),
+        )
+    except Exception as exc:
+        _dependency_cache = (False, str(exc))
+        return _dependency_cache
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "import kokoro failed").strip()
+        _dependency_cache = (False, detail)
+        return _dependency_cache
+
+    _dependency_cache = (True, None)
+    return _dependency_cache
 
 
 def ensure_model(options=None):

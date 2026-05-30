@@ -1,0 +1,7 @@
+# Install into .venv-mlx on Apple Silicon:
+#   .venv/bin/python -m venv .venv-mlx
+#   .venv-mlx/bin/python -m pip install -r requirements-mlx.txt
+mlx-audio>=0.4.3,<0.5
+misaki[ja]>=0.9.4
+unidic-lite>=1.0.8
+huggingface_hub>=1.0.0

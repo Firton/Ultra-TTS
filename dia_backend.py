@@ -1,16 +1,27 @@
 import gc
+import json
 import os
 import random
 import re
+import subprocess
+import sys
 import threading
+from pathlib import Path
 
-import numpy as np
+import local_paths
 
 
-os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
-os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
+local_paths.configure_local_model_env()
 
-MODEL_ID = "nari-labs/Dia-1.6B-0626"
+DEFAULT_MODEL_ID = "nari-labs/Dia-1.6B-0626"
+LOCAL_MODEL_DIR = local_paths.MODELS_DIR / "huggingface" / DEFAULT_MODEL_ID.replace("/", "__")
+LOCAL_DAC_DIR = local_paths.MODELS_DIR / "huggingface" / "descript__dac_44khz"
+ROOT = Path(__file__).resolve().parent
+DIA_WORKER = ROOT / "dia_worker.py"
+MODEL_ID = os.getenv(
+    "DIA_MODEL_ID",
+    str(LOCAL_MODEL_DIR) if (LOCAL_MODEL_DIR / "config.json").exists() else DEFAULT_MODEL_ID,
+)
 DEFAULT_MAX_NEW_TOKENS = 1280
 DEFAULT_GUIDANCE_SCALE = 3.0
 DEFAULT_TEMPERATURE = 1.8
@@ -26,6 +37,57 @@ _model_lock = threading.Lock()
 _speaker_tag_pattern = re.compile(r"\[(S[12])\]")
 _cjk_pattern = re.compile(r"[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]")
 _word_pattern = re.compile(r"[A-Za-z0-9]+(?:'[A-Za-z0-9]+)?")
+
+
+def hidden_subprocess_kwargs():
+    if os.name != "nt":
+        return {}
+
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = subprocess.SW_HIDE
+    return {
+        "creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        "startupinfo": startupinfo,
+    }
+
+
+def local_model_ready():
+    return all(
+        (LOCAL_MODEL_DIR / filename).exists()
+        for filename in [
+            "audio_tokenizer_config.json",
+            "config.json",
+            "model-00001-of-00002.safetensors",
+            "model-00002-of-00002.safetensors",
+            "preprocessor_config.json",
+        ]
+    )
+
+
+def local_dac_ready():
+    return all(
+        (LOCAL_DAC_DIR / filename).exists()
+        for filename in ["config.json", "model.safetensors", "preprocessor_config.json"]
+    )
+
+
+def patch_dia_audio_tokenizer_config():
+    config_path = LOCAL_MODEL_DIR / "audio_tokenizer_config.json"
+    if not config_path.exists() or not local_dac_ready():
+        return
+
+    desired_path = str(LOCAL_DAC_DIR)
+    try:
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+    except Exception:
+        return
+
+    if data.get("audio_tokenizer_name_or_path") == desired_path:
+        return
+
+    data["audio_tokenizer_name_or_path"] = desired_path
+    config_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
 
 def dependency_status():
@@ -49,6 +111,8 @@ def dependency_status():
         "loaded": _model is not None,
         "device": device,
         **details,
+        "localModelReady": local_model_ready(),
+        "localDacReady": local_dac_ready(),
         "recommended": recommended,
         "error": None,
         "modelId": MODEL_ID,
@@ -56,6 +120,16 @@ def dependency_status():
 
 
 def choose_device(torch_module):
+    forced = (os.getenv("DIA_DEVICE") or "").strip().lower()
+    if forced == "cpu":
+        return "cpu"
+    if forced == "cuda" and torch_module.cuda.is_available():
+        return "cuda"
+    if forced == "mps":
+        mps = getattr(torch_module.backends, "mps", None)
+        if mps is not None and mps.is_available():
+            return "mps"
+
     if torch_module.cuda.is_available():
         return "cuda"
 
@@ -113,6 +187,8 @@ def set_seed(torch_module, seed, device):
     if seed <= 0:
         return
 
+    import numpy as np
+
     random.seed(seed)
     np.random.seed(seed)
     torch_module.manual_seed(seed)
@@ -144,11 +220,23 @@ def get_or_load_model(options=None):
             )
 
         dtype = torch.float16 if device == "cuda" else torch.float32
-        _processor = AutoProcessor.from_pretrained(MODEL_ID)
+        if str(MODEL_ID) == str(LOCAL_MODEL_DIR):
+            if not local_model_ready():
+                raise RuntimeError("Dia model files are missing. Run scripts/download_models.py --current-hf dia dia-dac.")
+            if not local_dac_ready():
+                raise RuntimeError("Dia DAC audio tokenizer is missing. Run scripts/download_models.py --current-hf dia-dac.")
+            patch_dia_audio_tokenizer_config()
+
+        local_only = str(MODEL_ID) == str(LOCAL_MODEL_DIR)
+        _processor = AutoProcessor.from_pretrained(MODEL_ID, local_files_only=local_only)
+        load_kwargs = {
+            "attn_implementation": "eager",
+            "local_files_only": local_only,
+        }
         try:
-            _model = DiaForConditionalGeneration.from_pretrained(MODEL_ID, dtype=dtype)
+            _model = DiaForConditionalGeneration.from_pretrained(MODEL_ID, dtype=dtype, **load_kwargs)
         except TypeError:
-            _model = DiaForConditionalGeneration.from_pretrained(MODEL_ID, torch_dtype=dtype)
+            _model = DiaForConditionalGeneration.from_pretrained(MODEL_ID, torch_dtype=dtype, **load_kwargs)
         _model.to(device)
         _model.eval()
         _device = device
@@ -156,8 +244,9 @@ def get_or_load_model(options=None):
 
 
 def ensure_model(options=None):
-    get_or_load_model(options)
-    return {"ok": True, "status": dependency_status()}
+    status = dependency_status()
+    ok = bool(status.get("installed")) and bool(status.get("localModelReady")) and bool(status.get("localDacReady"))
+    return {"ok": ok, "status": status}
 
 
 def unload_model():
@@ -251,7 +340,7 @@ def prepare_dialogue(dialogue):
     return dialogue
 
 
-def generate_to_file(dia_text, output_path, options=None):
+def _generate_to_file_local(dia_text, output_path, options=None):
     options = options or {}
     dia_text = (dia_text or "").strip()
     if not dia_text:
@@ -288,3 +377,46 @@ def generate_to_file(dia_text, output_path, options=None):
     decoded = processor.batch_decode(outputs)
     processor.save_audio(decoded[0], str(output_path))
     return {"ok": True, "modelId": MODEL_ID}
+
+
+def generate_to_file(dia_text, output_path, options=None):
+    options = options or {}
+    if not DIA_WORKER.exists():
+        raise RuntimeError(f"Dia worker was not found at {DIA_WORKER}.")
+
+    request = {
+        "diaText": dia_text,
+        "outputPath": str(output_path),
+        "options": options,
+    }
+    env = dict(os.environ)
+    env.setdefault("PYTHONUTF8", "1")
+    env.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+    env.setdefault("HF_HUB_DISABLE_XET", "1")
+
+    result = subprocess.run(
+        [sys.executable, str(DIA_WORKER), "--json"],
+        input=json.dumps(request, ensure_ascii=False),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
+        check=False,
+        timeout=safe_int(options.get("diaTimeoutSeconds"), 1800, 60, 7200),
+        **hidden_subprocess_kwargs(),
+    )
+    stdout = (result.stdout or "").strip()
+    stderr = (result.stderr or "").strip()
+    parsed = None
+    if stdout:
+        try:
+            parsed = json.loads(stdout.splitlines()[-1])
+        except json.JSONDecodeError:
+            parsed = None
+
+    if result.returncode != 0 or not parsed or not parsed.get("ok"):
+        detail = parsed.get("error") if parsed else stderr or stdout or f"worker exited with {result.returncode}"
+        raise RuntimeError(f"Dia generation failed: {detail}")
+
+    return parsed

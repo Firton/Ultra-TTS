@@ -13,7 +13,11 @@
           <h1>Ultra-TTS</h1>
           <p id="statusText">状態を確認中</p>
         </div>
-        <button id="ensureButton" class="secondary-button" type="button">準備を確認</button>
+        <div class="topbar-actions">
+          <button id="ensureButton" class="secondary-button" type="button">準備を確認</button>
+          <button id="restartAppButton" class="secondary-button control-button" data-app-control="true" type="button">再起動</button>
+          <button id="stopAppButton" class="danger-button control-button" data-app-control="true" type="button">停止</button>
+        </div>
       </header>
 
       <main class="workspace">
@@ -90,6 +94,89 @@
             <p class="help-text">Kokoroは英語向けの軽量モデルです。このPCではPython 3.11の分離環境でCPU実行します。日本語はChatterboxを使う構成にしています。</p>
           </section>
 
+          <section id="mlxOptions" class="backend-options hidden">
+            <div class="option-grid">
+              <label class="option-label" data-mlx-setting="model">
+                <span class="option-title">MLXモデル</span>
+                <select id="mlxModelId"></select>
+                <span class="help-text">Mac mini M4向けのMLX-Audioモデル。日本語はChatterbox MLXかQwen3-TTS MLXを優先。</span>
+              </label>
+              <label class="option-label" data-mlx-setting="language">
+                <span class="option-title">言語</span>
+                <select id="mlxLanguageId"></select>
+                <span class="help-text">モデルごとの言語コード。Qwen3は japanese、Kokoroは j、Chatterboxは ja を使います。</span>
+              </label>
+              <label class="option-label" data-mlx-setting="speed">
+                <span class="option-title">速度</span>
+                <input id="mlxSpeed" type="number" min="0.5" max="2" step="0.05" value="1">
+                <span class="help-text">対応モデルだけ反映されます。通常は1.0。</span>
+              </label>
+              <label class="option-label" data-mlx-setting="maxTokens">
+                <span class="option-title">最大トークン</span>
+                <input id="mlxMaxTokens" type="number" min="128" max="4096" step="128" value="1200">
+                <span class="help-text">短い文は既定値でOK。途切れる場合だけ増やします。</span>
+              </label>
+              <label class="option-label" data-mlx-setting="temperature">
+                <span class="option-title">温度</span>
+                <input id="mlxTemperature" type="number" min="0.05" max="3" step="0.05" value="0.7">
+                <span class="help-text">低いほど安定、高いほど変化が出ます。</span>
+              </label>
+              <label class="option-label" data-mlx-setting="topP">
+                <span class="option-title">Top-p</span>
+                <input id="mlxTopP" type="number" min="0.05" max="1" step="0.05" value="0.9">
+                <span class="help-text">候補の広さ。崩れる場合は少し下げます。</span>
+              </label>
+              <label class="option-label" data-mlx-setting="topK">
+                <span class="option-title">Top-k</span>
+                <input id="mlxTopK" type="number" min="0" max="200" step="1" value="50">
+                <span class="help-text">候補数の上限。通常は50。</span>
+              </label>
+              <label class="option-label" data-mlx-setting="repetitionPenalty">
+                <span class="option-title">反復抑制</span>
+                <input id="mlxRepetitionPenalty" type="number" min="1" max="5" step="0.05" value="1.1">
+                <span class="help-text">末尾反復が出る時は少し上げます。</span>
+              </label>
+              <label class="option-label" data-mlx-setting="exaggeration">
+                <span class="option-title">抑揚</span>
+                <input id="mlxExaggeration" type="number" min="0" max="2" step="0.05" value="0.5">
+                <span class="help-text">Chatterbox系の感情/強弱。通常は0.5。</span>
+              </label>
+              <label class="option-label" data-mlx-setting="cfgWeight">
+                <span class="option-title">CFG</span>
+                <input id="mlxCfgWeight" type="number" min="0" max="1" step="0.05" value="0.5">
+                <span class="help-text">Chatterbox系の文章/声質への寄せ具合。</span>
+              </label>
+              <label class="option-label" data-mlx-setting="minP">
+                <span class="option-title">Min-p</span>
+                <input id="mlxMinP" type="number" min="0" max="1" step="0.01" value="0.05">
+                <span class="help-text">Chatterbox系の弱い候補を切る設定。</span>
+              </label>
+              <label class="option-label" data-mlx-setting="seed">
+                <span class="option-title">Seed</span>
+                <input id="mlxSeed" type="number" min="0" max="2147483647" step="1" value="0">
+                <span class="help-text">0はランダム。Qwen3は0以外にすると話者ごとの声が安定しやすくなります。</span>
+              </label>
+            </div>
+            <div class="mlx-extra-grid">
+              <label class="option-label" data-mlx-setting="refAudio">
+                <span class="option-title">参照音声パス</span>
+                <input id="mlxRefAudioPath" type="text" placeholder="任意: /Users/name/voice.wav">
+                <span class="help-text">ChatterboxやQwen3 Baseで声質を寄せる時に使います。</span>
+              </label>
+              <label class="option-label" data-mlx-setting="refText">
+                <span class="option-title">参照音声の文字起こし</span>
+                <input id="mlxRefText" type="text" placeholder="Qwen3 Baseで参照音声を使う場合は入力">
+                <span class="help-text">Qwen3 Baseの参照音声cloningでは必須です。</span>
+              </label>
+              <label class="option-label" data-mlx-setting="instruct">
+                <span class="option-title">声・感情の指示</span>
+                <input id="mlxInstruct" type="text" placeholder="例: 明るく落ち着いた日本語ナレーション">
+                <span class="help-text">CustomVoiceは感情/スタイル、VoiceDesignは声質説明として使います。</span>
+              </label>
+            </div>
+            <p id="mlxModelHint" class="help-text">モデルを選ぶと、使える設定だけ表示します。</p>
+          </section>
+
           <section id="diaOptions" class="backend-options hidden">
             <div class="option-grid">
               <label class="option-label">
@@ -125,22 +212,25 @@
               <label class="option-label checkbox-label">
                 <span class="option-title">低VRAMでも試す</span>
                 <input id="diaAllowLowVram" type="checkbox">
-                <span class="help-text">このPCのGPUではDiaが破綻しやすいので通常はオフ。実験したい時だけオン。</span>
+                <span class="help-text">CUDAでVRAM警告が出る時だけ使う実験設定。</span>
               </label>
             </div>
-            <p class="help-text">Diaは英語会話向けの実験枠です。台本は[S1]と[S2]を交互に書く形式にしてください。公式目安は約10GB VRAMで、このPCの6GB級GPUでは遅いだけでなく音声が崩れることがあります。</p>
+            <p class="help-text">Diaは英語会話向けの実験枠です。台本は[S1]と[S2]を交互に書く形式にしてください。重いモデルなので初回生成は1分前後かかることがあります。</p>
           </section>
+
+          <div id="voiceField" class="field-row voice-field">
+            <label>声</label>
+            <div id="singleVoiceButtons" class="voice-grid"></div>
+            <p id="voiceHelp" class="help-text voice-help"></p>
+          </div>
 
           <div class="tabs" role="tablist" aria-label="生成モード">
             <button class="tab active" data-mode="single" type="button">単発</button>
             <button class="tab" data-mode="script" type="button">台本</button>
+            <button class="tab" data-mode="longform" type="button">長文</button>
           </div>
 
           <section id="singleMode" class="mode-panel">
-            <div class="field-row">
-              <label>声</label>
-              <div id="singleVoiceButtons" class="voice-grid"></div>
-            </div>
             <label class="stacked-label" for="singleText">テキスト</label>
             <textarea id="singleText" rows="8" spellcheck="false">Hello, this is a local Ultra-TTS test.</textarea>
             <button id="generateSingleButton" class="primary-button" type="button">生成</button>
@@ -162,6 +252,20 @@ B: I'm good. Let's generate this as a two-speaker WAV.</textarea>
             </div>
             <button id="generateScriptButton" class="primary-button" type="button">台本を生成</button>
           </section>
+
+          <section id="longformMode" class="mode-panel hidden">
+            <label class="stacked-label" for="articleTitle">タイトル</label>
+            <input id="articleTitle" type="text" placeholder="任意: ファイル名とmanifestに使います">
+            <div class="inline-options longform-options">
+              <label for="maxSegmentChars">分割文字数</label>
+              <input id="maxSegmentChars" type="number" min="80" max="1200" step="20" value="300">
+              <label for="longformSilenceMs">間隔(ms)</label>
+              <input id="longformSilenceMs" type="number" min="0" max="5000" step="50" value="450">
+            </div>
+            <label class="stacked-label" for="longformText">本文</label>
+            <textarea id="longformText" rows="14" spellcheck="false">ここに記事や教材本文を貼り付けます。長い文章は文と段落を見て自動で分割し、最後に1つのWAVへ結合します。</textarea>
+            <button id="generateLongformButton" class="primary-button" type="button">長文を生成</button>
+          </section>
         </section>
 
         <section class="panel result-panel">
@@ -178,6 +282,14 @@ B: I'm good. Let's generate this as a two-speaker WAV.</textarea>
           </div>
           <audio id="audioPlayer" controls></audio>
           <a id="downloadLink" class="download-link hidden" href="#" download>WAVを開く</a>
+          <a id="manifestLink" class="download-link manifest-link hidden" href="#" download>manifest.jsonを開く</a>
+          <section class="model-inventory" aria-label="モデル保存状況">
+            <div class="model-inventory-head">
+              <h2>モデル</h2>
+              <p id="modelSummary">確認中</p>
+            </div>
+            <div id="modelList" class="model-list"></div>
+          </section>
           <div id="log" class="log" aria-live="polite"></div>
         </section>
       </main>

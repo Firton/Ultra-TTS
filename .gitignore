@@ -4,8 +4,10 @@ __pycache__/
 .env.*
 .venv/
 .venv-kokoro/
+.venv-mlx/
 logs/
 outputs/
+models/
 venv/
 *.log
 *.tmp
