@@ -1,6 +1,7 @@
 @echo off
 setlocal
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Users\firto\Ultra-TTS\desktop-launcher.ps1"
+set "ROOT=%~dp0.."
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\desktop-launcher.ps1"
 
 endlocal

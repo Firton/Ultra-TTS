@@ -101,7 +101,7 @@ const mlxSettingProfiles = {
     defaults: { maxTokens: 1000, temperature: 0.65, topP: 1, repetitionPenalty: 1.2, exaggeration: 0.5, cfgWeight: 0.5, minP: 0.05, seed: 0 },
     hint: "Chatterbox MLX: 日本語/英語を含む多言語と参照音声向け。Top-kや指示文はこのモデルでは使いません。",
     placeholders: {
-      refAudio: "任意: /Users/name/voice.wav",
+      refAudio: "任意: path/to/voice.wav",
     },
   },
   "mlx-qwen3-tts": {
@@ -109,7 +109,7 @@ const mlxSettingProfiles = {
     defaults: { speed: 1, maxTokens: 1200, temperature: 0.35, topP: 0.85, topK: 20, repetitionPenalty: 1.2, seed: 42 },
     hint: "Qwen3-TTS Base: プリセット声ではなく参照音声で声を固定するモデルです。参照音声を使わない場合は声が揺れやすいので、キャラ別の声にはCustomVoiceを使ってください。",
     placeholders: {
-      refAudio: "任意: /Users/name/reference.wav",
+      refAudio: "任意: path/to/reference.wav",
       refText: "参照音声で読まれている文章",
     },
   },
@@ -176,7 +176,7 @@ const diaScriptSample = [
   "[S1] Dia works best when the script starts with speaker one.",
   "[S2] And then speaker two answers in English.",
   "[S1] Short tests can sound unnatural, so this sample gives it a little more context.",
-  "[S2] On this GPU, Kokoro is still the safer model for everyday English TTS.",
+  "[S2] For everyday English narration, Kokoro is usually the simpler model to try first.",
 ].join("\n");
 
 let mode = "single";

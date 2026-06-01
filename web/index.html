@@ -91,7 +91,7 @@
                 <span class="help-text">話速。1.0が標準、0.9で少しゆっくり、1.1で少し速め。</span>
               </label>
             </div>
-            <p class="help-text">Kokoroは英語向けの軽量モデルです。このPCではPython 3.11の分離環境でCPU実行します。日本語はChatterboxを使う構成にしています。</p>
+            <p class="help-text">Kokoroは英語向けの軽量モデルです。Python 3.11の分離環境で実行する構成です。日本語はChatterboxを使う構成にしています。</p>
           </section>
 
           <section id="mlxOptions" class="backend-options hidden">
@@ -99,7 +99,7 @@
               <label class="option-label" data-mlx-setting="model">
                 <span class="option-title">MLXモデル</span>
                 <select id="mlxModelId"></select>
-                <span class="help-text">Mac mini M4向けのMLX-Audioモデル。日本語はChatterbox MLXかQwen3-TTS MLXを優先。</span>
+                <span class="help-text">Apple Silicon向けのMLX-Audioモデル。日本語はChatterbox MLXかQwen3-TTS MLXを優先。</span>
               </label>
               <label class="option-label" data-mlx-setting="language">
                 <span class="option-title">言語</span>
@@ -160,7 +160,7 @@
             <div class="mlx-extra-grid">
               <label class="option-label" data-mlx-setting="refAudio">
                 <span class="option-title">参照音声パス</span>
-                <input id="mlxRefAudioPath" type="text" placeholder="任意: /Users/name/voice.wav">
+                <input id="mlxRefAudioPath" type="text" placeholder="任意: path/to/voice.wav">
                 <span class="help-text">ChatterboxやQwen3 Baseで声質を寄せる時に使います。</span>
               </label>
               <label class="option-label" data-mlx-setting="refText">
