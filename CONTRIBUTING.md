@@ -38,4 +38,6 @@ Please open an issue before large changes such as:
 
 ## AI-assisted contributions
 
-AI-assisted contributions are allowed, but all changes must be reviewed by a human maintainer before release. Tests and documentation must be checked before merging.
+AI-assisted contributions are allowed, but all changes must be reviewed by a human maintainer before release.
+
+Tests and documentation must be checked before merging.
