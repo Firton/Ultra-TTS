@@ -1,7 +1,7 @@
 # Roadmap
 
-Ultra-TTS is an early open-source local TTS GUI and CLI workspace. The roadmap focuses on
-reliability, documentation, model setup clarity, and maintainability.
+Ultra-TTS is an early open-source local TTS GUI and CLI workspace. The roadmap
+focuses on reliability, documentation, model setup clarity, and maintainability.
 
 ## Near term
 

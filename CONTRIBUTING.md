@@ -2,8 +2,8 @@
 
 Contributions are welcome.
 
-Ultra-TTS is an early open-source project focused on local Japanese and multilingual TTS
-workflows.
+Ultra-TTS is an early open-source project focused on local Japanese and multilingual
+TTS workflows.
 
 ## Good first contributions
 
@@ -39,7 +39,7 @@ Please open an issue before large changes such as:
 
 ## AI-assisted contributions
 
-AI-assisted contributions are allowed, but all changes must be reviewed by a human maintainer
-before release.
+AI-assisted contributions are allowed, but all changes must be reviewed by a human
+maintainer before release.
 
 Tests and documentation must be checked before merging.
