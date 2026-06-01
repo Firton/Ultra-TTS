@@ -10,6 +10,24 @@ production-proven. Its current value is as a practical local TTS workflow for
 developers, creators, educators, accessibility-focused users, and maintainers who
 want to compare or run local TTS backends without relying only on cloud APIs.
 
+## Project status and maintainer scope
+
+Ultra-TTS is an early open-source project.
+
+The current maintainer is responsible for the public Ultra-TTS repository structure,
+local browser GUI workflow, CLI workflow, backend integration notes, documentation,
+lightweight tests, release notes, issue triage, pull request review, and third-party
+model/backend responsibility notes.
+
+The repository history may include earlier code lineage or upstream work. The current
+maintainer scope is the public Ultra-TTS workspace as maintained in this repository:
+the packaging of local TTS workflows, documentation, launcher scripts, backend
+integration notes, tests, and ongoing release/issue management.
+
+The project should not be described as broadly adopted or production-proven. Its current
+public value is as a practical local TTS workspace for Japanese and multilingual workflows,
+backend comparison, long-form text splitting, and model responsibility documentation.
+
 ## Current maintainer responsibilities
 
 The primary maintainer is responsible for:

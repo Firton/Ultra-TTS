@@ -36,6 +36,26 @@ class TextPipelineTests(unittest.TestCase):
         self.assertTrue(all(segment["text"].strip() for segment in segments))
         self.assertTrue(all(segment["chars"] == len(segment["text"]) for segment in segments))
 
+    def test_mixed_japanese_english_text_is_preserved(self):
+        text = "今日はUltra-TTSでlocal TTS workflowを確認します。Version one works."
+        segments = text_pipeline.segment_text(text, 120)
+        joined = " ".join(segment["text"] for segment in segments)
+
+        self.assertIn("Ultra-TTS", joined)
+        self.assertIn("local TTS workflow", joined)
+        self.assertIn("Version one works.", joined)
+        self.assertTrue(all(segment["text"].strip() for segment in segments))
+
+    def test_long_form_segments_respect_max_length(self):
+        text = (
+            "第一段落です。これは長文分割の確認です。"
+            " ".join(["日本語とEnglishを混ぜた文章です"] * 35)
+        )
+        segments = text_pipeline.segment_text(text, 100)
+
+        self.assertGreater(len(segments), 1)
+        self.assertTrue(all(segment["chars"] <= 100 for segment in segments))
+
     def test_segment_ids_and_indexes_are_stable(self):
         segments = text_pipeline.segment_text("One sentence. Two sentence. Three sentence.", 80)
 
@@ -59,6 +79,10 @@ class TextPipelineTests(unittest.TestCase):
             text_pipeline.relative_url_path(path, root),
             "web/sample.manifest.json",
         )
+
+    def test_clean_slug_removes_path_unsafe_characters(self):
+        self.assertEqual(text_pipeline.clean_slug("../Private Voice: Test.wav"), "Private-Voice-Test.wav")
+        self.assertEqual(text_pipeline.clean_slug("   "), "untitled")
 
 
 if __name__ == "__main__":
