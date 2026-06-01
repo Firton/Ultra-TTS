@@ -2,9 +2,11 @@
 
 ## Reporting a Vulnerability
 
-If you find a security issue in Ultra-TTS, please do not disclose it publicly before it is reviewed.
+If you find a security issue in Ultra-TTS, please do not disclose it publicly before it is
+reviewed.
 
-Open an issue only for non-sensitive reports. For sensitive vulnerability details, use a private communication channel if one is listed in the maintainer profile.
+Open an issue only for non-sensitive reports. For sensitive vulnerability details, use a
+private communication channel if one is listed in the maintainer profile.
 
 ## Scope
 
@@ -30,4 +32,5 @@ Please do not include the following in public issues or pull requests:
 
 ## Maintainer response
 
-The maintainer will review security reports, assess impact, and publish fixes or mitigations when appropriate.
+The maintainer will review security reports, assess impact, and publish fixes or mitigations
+when appropriate.
