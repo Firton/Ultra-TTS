@@ -22,3 +22,9 @@ venv/
 *.onnx
 .cache/
 .DS_Store
+
+!docs/
+!docs/audio/
+!docs/audio/.gitkeep
+!docs/images/
+!docs/images/.gitkeep
