@@ -23,7 +23,11 @@ The project combines a browser-based GUI, CLI entry points, backend setup notes,
 local model storage conventions, and lightweight tests so maintainers can keep
 improving the workflow without requiring model downloads for every development task.
 
-Demo screenshots and audio samples will be added in a future release.
+## Demo
+
+A Web UI screenshot will be added in a future release.
+
+Audio samples will be added only when model and voice licenses allow redistribution.
 
 ## Features
 
@@ -226,6 +230,9 @@ weights, voice files, datasets, or generated voices.
 Users are responsible for checking and complying with the license terms of each
 model and backend they download or use, including LM Studio models, Hugging Face
 models, Piper voices, Kokoro, Chatterbox, Dia, and MLX-Audio models.
+
+For a backend-by-backend responsibility summary, see
+[THIRD_PARTY_MODELS.md](THIRD_PARTY_MODELS.md).
 
 ## Security and privacy
 
