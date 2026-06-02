@@ -8,15 +8,82 @@ jobs:
   unittest:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
 
       - name: Show Python version
         run: python --version
 
       - name: Run lightweight unit tests
         run: python -m unittest discover -s tests
+
+      - name: Compile lightweight Python files
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import py_compile
+
+          files = [
+              "text_pipeline.py",
+              "local_paths.py",
+              "model_registry.py",
+              "web_app.py",
+          ]
+
+          for f in files:
+              p = Path(f)
+              if not p.exists():
+                  print(f"skipped missing: {f}")
+                  continue
+              try:
+                  py_compile.compile(str(p), doraise=True)
+                  print(f"compiled: {f}")
+              except Exception as exc:
+                  print(f"failed: {f}: {exc}")
+                  raise
+          PY
+
+      - name: Check public docs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          required = [
+              "README.md",
+              "SECURITY.md",
+              "CONTRIBUTING.md",
+              "ROADMAP.md",
+              "CHANGELOG.md",
+              "THIRD_PARTY_MODELS.md",
+              "docs/maintainer-notes.md",
+              "docs/demo.md",
+          ]
+
+          for path in required:
+              p = Path(path)
+              if not p.exists():
+                  raise SystemExit(f"missing required doc: {path}")
+              text = p.read_text(encoding="utf-8")
+              if len(text.splitlines()) < 5:
+                  raise SystemExit(f"document too short or collapsed: {path}")
+
+          readme = Path("README.md").read_text(encoding="utf-8")
+          for needle in ["THIRD_PARTY_MODELS.md", "docs/demo.md", "docs/maintainer-notes.md"]:
+              if needle not in readme:
+                  raise SystemExit(f"README missing link/reference: {needle}")
+
+          third_party = Path("THIRD_PARTY_MODELS.md").read_text(encoding="utf-8").lower()
+          for phrase in ["does not commit", "model weights", "generated audio", "check"]:
+              if phrase not in third_party:
+                  raise SystemExit(f"THIRD_PARTY_MODELS.md missing expected phrase: {phrase}")
+
+          print("public docs check passed")
+          PY

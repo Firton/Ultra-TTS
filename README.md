@@ -25,7 +25,8 @@ improving the workflow without requiring model downloads for every development t
 
 ## Demo
 
-A Web UI screenshot will be added in a future release.
+A Web UI screenshot is tracked as a maintainer task and will be added in a future release.
+See [docs/demo.md](docs/demo.md).
 
 Audio samples will be added only when model and voice licenses allow redistribution.
 
@@ -233,6 +234,9 @@ models, Piper voices, Kokoro, Chatterbox, Dia, and MLX-Audio models.
 
 For a backend-by-backend responsibility summary, see
 [THIRD_PARTY_MODELS.md](THIRD_PARTY_MODELS.md).
+
+For project status, maintainer scope, and current public evidence, see
+[docs/maintainer-notes.md](docs/maintainer-notes.md).
 
 ## Security and privacy
 
