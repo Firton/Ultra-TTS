@@ -44,6 +44,23 @@ def split_paragraphs(text):
     return paragraphs
 
 
+def is_sentence_ending(paragraph, index):
+    char = paragraph[index]
+    if char not in SENTENCE_ENDINGS:
+        return False
+
+    if char == ".":
+        previous_char = paragraph[index - 1] if index > 0 else ""
+        next_char = paragraph[index + 1] if index + 1 < len(paragraph) else ""
+
+        if previous_char.isdigit() and next_char.isdigit():
+            return False
+        if previous_char.isalnum() and next_char.isalnum():
+            return False
+
+    return True
+
+
 def split_sentences(paragraph):
     paragraph = re.sub(r"\s+", " ", (paragraph or "").strip())
     if not paragraph:
@@ -53,8 +70,7 @@ def split_sentences(paragraph):
     start = 0
     index = 0
     while index < len(paragraph):
-        char = paragraph[index]
-        if char in SENTENCE_ENDINGS:
+        if is_sentence_ending(paragraph, index):
             end = index + 1
             while end < len(paragraph) and paragraph[end] in CLOSING_MARKS:
                 end += 1

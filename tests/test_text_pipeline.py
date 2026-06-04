@@ -36,6 +36,17 @@ class TextPipelineTests(unittest.TestCase):
         self.assertTrue(all(segment["text"].strip() for segment in segments))
         self.assertTrue(all(segment["chars"] == len(segment["text"]) for segment in segments))
 
+    def test_japanese_punctuation_and_closing_marks_are_preserved(self):
+        text = "これはテストです。「句読点も確認します。」次の文です！最後です？"
+        segments = text_pipeline.segment_text(text, 120)
+        joined = " ".join(segment["text"] for segment in segments)
+
+        self.assertIn("これはテストです。", joined)
+        self.assertIn("「句読点も確認します。」", joined)
+        self.assertIn("次の文です！", joined)
+        self.assertIn("最後です？", joined)
+        self.assertTrue(all(segment["text"].strip() for segment in segments))
+
     def test_mixed_japanese_english_text_is_preserved(self):
         text = "今日はUltra-TTSでlocal TTS workflowを確認します。Version one works."
         segments = text_pipeline.segment_text(text, 120)
@@ -44,6 +55,25 @@ class TextPipelineTests(unittest.TestCase):
         self.assertIn("Ultra-TTS", joined)
         self.assertIn("local TTS workflow", joined)
         self.assertIn("Version one works.", joined)
+        self.assertTrue(all(segment["text"].strip() for segment in segments))
+
+    def test_mixed_japanese_english_product_terms_are_preserved(self):
+        text = "Ultra-TTSはlocal TTS workflowを扱います。OpenAI APIだけに依存しない設計です。"
+        segments = text_pipeline.segment_text(text, 120)
+        joined = " ".join(segment["text"] for segment in segments)
+
+        self.assertIn("Ultra-TTS", joined)
+        self.assertIn("local TTS workflow", joined)
+        self.assertIn("OpenAI API", joined)
+        self.assertIn("依存しない設計", joined)
+
+    def test_japanese_numbers_units_dates_amounts_and_versions_are_preserved(self):
+        text = "2026年6月3日に3.5kgの荷物を1,200円で発送しました。v1.2.3の設定も確認します。温度は23.5℃です。"
+        segments = text_pipeline.segment_text(text, 120)
+        joined = " ".join(segment["text"] for segment in segments)
+
+        for needle in ["2026年6月3日", "3.5kg", "1,200円", "v1.2.3", "23.5℃"]:
+            self.assertIn(needle, joined)
         self.assertTrue(all(segment["text"].strip() for segment in segments))
 
     def test_long_form_segments_respect_max_length(self):
@@ -55,6 +85,20 @@ class TextPipelineTests(unittest.TestCase):
 
         self.assertGreater(len(segments), 1)
         self.assertTrue(all(segment["chars"] <= 100 for segment in segments))
+
+    def test_long_form_japanese_sentence_segments_have_stable_metadata(self):
+        text = "。".join([f"これは第{i}文です" for i in range(1, 40)]) + "。"
+        segments = text_pipeline.segment_text(text, 100)
+
+        self.assertGreater(len(segments), 1)
+        self.assertTrue(all(segment["chars"] <= 100 for segment in segments))
+        self.assertEqual([s["index"] for s in segments], list(range(1, len(segments) + 1)))
+        self.assertTrue(all(s["id"] == f"seg-{s['index']:04d}" for s in segments))
+
+    def test_punctuation_heavy_input_does_not_create_empty_segments(self):
+        segments = text_pipeline.segment_text("。。。！？   \n\nこれは本文です。。。", 120)
+
+        self.assertTrue(all(segment["text"].strip() for segment in segments))
 
     def test_segment_ids_and_indexes_are_stable(self):
         segments = text_pipeline.segment_text("One sentence. Two sentence. Three sentence.", 80)
