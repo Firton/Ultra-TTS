@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added lightweight Japanese text normalization and long-form segmentation regression tests.
+
 ## v0.1.0 - Initial public OSS release
 
 Initial public release of Ultra-TTS.
